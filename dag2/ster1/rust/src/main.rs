@@ -11,7 +11,7 @@ fn main() {
             Some(vector) => id = vector,
             None => id = Vec::with_capacity(0),
         }
-        sum += id.iter().sum::<u32>();
+        sum += id.iter().sum::<u64>();
     }
     
     println!("de gewilde som is: {sum}");
@@ -28,13 +28,18 @@ fn str_to_range(input: &str) -> Vec<&str>{
     input.split(',').collect()
 }
 
-fn str_to_range_int(input_string: &str) ->Vec<[u32;2]> {
+fn str_to_range_int(input_string: &str) ->Vec<[u64;2]> {
     let ranges = str_to_range(input_string);
-    let mut result: Vec<[u32;2]> = Vec::new();
+    let mut result: Vec<[u64;2]> = Vec::new();
     for i in ranges {
         let mut range = i.split('-');
         let range = [range.next().unwrap(), range.next().unwrap()];
-        let range: [u32; 2] = [range[0].parse().unwrap(), range[1].parse().unwrap()];
+        // {
+        //     let value_1 = range[0];
+        //     let value_2 = range[1];
+        //     println!("range: [{value_1}, {value_2}]");
+        // }
+        let range: [u64; 2] = [range[0].parse().unwrap(), range[1].parse().unwrap()];
         result.push(range);
     }
     result
@@ -42,20 +47,16 @@ fn str_to_range_int(input_string: &str) ->Vec<[u32;2]> {
 
 use itertools;
 
-fn range_to_wrong_id(ranges: [u32;2]) -> Option<Vec<u32>> {
-    let mut result:Vec<u32> = Vec::new();
+fn range_to_wrong_id(ranges: [u64;2]) -> Option<Vec<u64>> {
+    let mut result:Vec<u64> = Vec::new();
     for i in ranges[0]..=ranges[1] {
         let length = itertools::iterate(i, |&i| i / 10).take_while(|&i| i > 0).count().max(1);
         if length % 2 == 1 {
             continue;
         }
         let length= (length as f32/2.0).round() as u32;
-        let left: u32 = i/(10_u32.pow(length));
-        let right: u32 = i%(10_u32.pow(length));
-        // if length >=2 {
-        //     println!("length: {length}, left: {left}, right: {right}");
-        //     println!("value: {i}");
-        // }
+        let left = i/(10_u64.pow(length));
+        let right = i%(10_u64.pow(length));
         if left == right {
             result.push(i);
         }
@@ -124,23 +125,26 @@ mod tests {
         assert_eq!(sum, 1227775554, "sum is {sum}, not 1227775554\n");
     }
     
-    // #[test]
-    // fn read_input() {
-    //     let content = fs::read_to_string("../test_input.txt").expect("expect a file");
-    //     //krijg de ranges (11-22 en 100-303 bijv.)
-    //     let ranges = content.split(',');
-    //     let mut check_range: Vec<[u32; 2]> = Vec::new();
-    //     //in een vector, sla de begin en eind in een array
-    //     for string_range in ranges {
-    //         let mut iterator = string_range.split('-');
-    //         let array_range = [iterator.next().unwrap(), iterator.next().unwrap()];
-    //         let array_range: [u32;2] = [array_range[0].parse().unwrap(), array_range[1].parse().unwrap()];
-    //         check_range.push(array_range);
-    //     }
-    //     assert_eq!(check_range[0][0], 11);
-    //     assert_eq!(check_range[0][1], 22);
+    #[test]
+    fn read_input() {
+        let content = fs::read_to_string("../test_input.txt").expect("expect a file");
+        //krijg de ranges (11-22 en 100-303 bijv.)
+        let ranges = content.split(',');
+        let mut check_range: Vec<[u64; 2]> = Vec::new();
+        //in een vector, sla de begin en eind in een array
+        for string_range in ranges {
+            let mut iterator = string_range.split('-');
+            let array_range = [iterator.next().unwrap(), iterator.next().unwrap()];
+            let array_range: [u64;2] = [array_range[0].parse().unwrap(), array_range[1].parse().unwrap()];
+            check_range.push(array_range);
+        }
+        assert_eq!(check_range[0][0], 5542145);
+        assert_eq!(check_range[0][1], 5582046);
 
-    //     assert_eq!(check_range[1][0], 101);
-    //     assert_eq!(check_range[1][1], 120);
-    // }
+        assert_eq!(check_range[1][0], 262248430);
+        assert_eq!(check_range[1][1], 262271846);
+
+        assert_eq!(check_range[2][0], 211488);
+        assert_eq!(check_range[2][1], 230593);
+    }
 }
