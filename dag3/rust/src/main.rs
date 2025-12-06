@@ -54,7 +54,7 @@ fn find_highest_val(nums: (u8, [u8;2])) -> (u8, u8) {
         }
         //val 2 is bigger than val1
         else {
-            (high[2], input)
+            (high[1], input)
         }
     }
 }
@@ -113,7 +113,10 @@ mod tests {
         for mut characters in output {
             let mut expected_str = input[index].chars();
             for _ in 0..input[0].len() {
-                assert_eq!(characters.next(), expected_str.next());
+                let chars = [characters.next(), expected_str.next()];
+                
+                println!("char: {:?}, expected char: {:?}", chars[0], chars[1]);
+                assert_eq!(chars[0], chars[1]);
             }
             index += 1;
         }
@@ -141,26 +144,8 @@ mod tests {
         assert_eq!(sum, expected_sum, "sums are not equal")
     }
 
-    #[test]
-    fn read_input() {
-        let content = fs::read_to_string("../test_input.txt").expect("expect a file");
-        //krijg de ranges (11-22 en 100-303 bijv.)
-        let ranges = content.split(',');
-        let mut check_range: Vec<[u64; 2]> = Vec::new();
-        //in een vector, sla de begin en eind in een array
-        for string_range in ranges {
-            let mut iterator = string_range.split('-');
-            let array_range = [iterator.next().unwrap(), iterator.next().unwrap()];
-            let array_range: [u64;2] = [array_range[0].parse().unwrap(), array_range[1].parse().unwrap()];
-            check_range.push(array_range);
-        }
-        assert_eq!(check_range[0][0], 5542145);
-        assert_eq!(check_range[0][1], 5582046);
-
-        assert_eq!(check_range[1][0], 262248430);
-        assert_eq!(check_range[1][1], 262271846);
-
-        assert_eq!(check_range[2][0], 211488);
-        assert_eq!(check_range[2][1], 230593);
-    }
+    // #[test]
+    // fn read_input() {
+    //     let content = fs::read_to_string("../test_input.txt").expect("expect a file");
+    // }
 }
