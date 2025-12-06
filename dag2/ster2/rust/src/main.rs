@@ -13,7 +13,6 @@ fn main() {
         }
         sum += id.iter().sum::<u64>();
     }
-    
     println!("de gewilde som is: {sum}");
 }
 
@@ -70,7 +69,7 @@ fn range_to_wrong_id(ranges: [u64;2]) -> Option<Vec<u64>> {
         let mut amount_repeat = 0;
 
         let mut index = 0;
-        println!("now checking {}", i);
+        // println!("now checking {}", i);
         'digit: for i in digit {
             
             //should only happen with first value
@@ -105,16 +104,16 @@ fn range_to_wrong_id(ranges: [u64;2]) -> Option<Vec<u64>> {
             new_pattern.append(&mut seen_digits.clone());
             amount_repeat = 0;
             pattern = std::mem::take(&mut new_pattern);
-            print!("new pattern is: ");
-            for i in &pattern {
-                print!("{}", *i);
-            }
-            print!("\n");
+            // print!("new pattern is: ");
+            // for i in &pattern {
+            //     print!("{}", *i);
+            // }
+            // print!("\n");
 
             seen_digits.clear();
         }
         if repeated {
-            println!("found value: {i}");
+            // println!("found value: {i}");
             result.push(i);
         }
     }
