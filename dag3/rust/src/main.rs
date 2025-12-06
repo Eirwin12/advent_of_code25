@@ -62,9 +62,9 @@ fn find_highest_val(nums: (u8, [u8;2])) -> (u8, u8) {
 fn find_high_banks (input: &str) ->Vec<Option<u8>>{
     let banks = str_to_banks(input);
     //be as greedy as possible
-    let mut highest_nums = [0_u8,0_u8];
     let mut result = Vec::new();
     for c in banks {
+        let mut highest_nums = [0_u8,0_u8];
         for character in c {
             let Some(character) = character.to_digit(10) else {
                 //not a number!?
@@ -86,10 +86,21 @@ fn find_high_banks (input: &str) ->Vec<Option<u8>>{
 fn str_to_banks(input_string: &str) ->Vec<Chars<'_>> {
     
     fn to_str(input: &str) -> Vec<&str> {
-        input.lines().collect()
+        let mut result: Vec<&str> = input.lines().collect();
+        for i in 0..result.len() {
+            result[i] = result[i].trim();
+        }
+        result
     }
 
     let banks = to_str(input_string);
+    println!("strings are: \n{}\n{}", banks[0], banks[1]);
+    if banks.get(1) == None {
+        println!("second string isn't being detected");
+    }
+    else {
+        println!("found string: {}", banks[1]);
+    }
     let mut bank = Vec::new();
     for str in banks {
         bank.push(str.chars());
@@ -104,7 +115,7 @@ mod tests {
 
     #[test]
     fn read_bank() {
-        let input = "987654321111111\n
+        let input = "987654321111111
                            818181911112111";
 
         let output = str_to_banks(input);
@@ -115,7 +126,7 @@ mod tests {
             for _ in 0..input[0].len() {
                 let chars = [characters.next(), expected_str.next()];
                 
-                println!("char: {:?}, expected char: {:?}", chars[0], chars[1]);
+                println!("found chars are:\n{:?}\n{:?}", chars[0], chars[1]);
                 assert_eq!(chars[0], chars[1]);
             }
             index += 1;
@@ -124,17 +135,22 @@ mod tests {
 
     #[test]
     fn test_banks() {
-        let input = "987654321111111\n
-                      811111111111119\n
-                      234234234234278\n
+        let input = "987654321111111
+                      811111111111119
+                      234234234234278
                       818181911112111";
         let output = [98, 89, 78, 92];
+        let mut index = 0;
         let expected_sum: u64 = output.iter().sum();
         let result = find_high_banks(input);
         let mut sum: u64 = 0;
         for num in result {
             match num {
-                Some(t) => sum += t as u64,
+                Some(t) => {
+                    sum += t as u64;
+                    assert_eq!(t, output[index] as u8, "wrong sum");
+                    index+=1;
+                }
                 None => {
                     println!("this isn't supposed to happen!?");
                     panic!();
