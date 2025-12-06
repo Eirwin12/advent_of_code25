@@ -1,15 +1,28 @@
-use std::fs;
+use std::{fs, fs::File};
+use std::io::Write;
 
 fn main() {
     let content = fs::read_to_string("../input.txt").expect("expect a file");
     let input = str_to_range_int(&content);
     let mut sum = 0;
 
+    let mut file = File::create("wrong_id.txt").expect("unable to create file");
+
     for ranges in input {
         let id;
         match range_to_wrong_id(ranges) {
             Some(vector) => id = vector,
             None => id = Vec::with_capacity(0),
+        }
+        for i in &id {
+            let mut string = i.to_string();
+            string.push_str(",");
+            // let string.parse
+            let  string = string.as_bytes();
+            match file.write_all(string) {
+                Ok(T) => println!("printed to file"),
+                Err(T) => println!("didn't print to file"),
+            }
         }
         sum += id.iter().sum::<u64>();
     }
@@ -113,7 +126,7 @@ fn range_to_wrong_id(ranges: [u64;2]) -> Option<Vec<u64>> {
             seen_digits.clear();
         }
         if repeated {
-            // println!("found value: {i}");
+            println!("found value: {i}");
             result.push(i);
         }
     }
@@ -192,7 +205,6 @@ mod tests {
     fn get_sum() {
         let input = str_to_range_int("11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124");
         let all_wrong_id = [11, 22, 99, 111, 999, 1010, 1188511885, 222222, 446446, 38593859, 565656, 824824824, 2121212121];
-        // let all_wrong_id = [11, 22, 99, 111, 999, 1010, 222222, 38593859, 565656, 2121212121, 824824824, 1188511885, 446446];
         let mut iter_wrong_id = all_wrong_id.iter();
         let mut sum = 0;
         for ranges in input {
