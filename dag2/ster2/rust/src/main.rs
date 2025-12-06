@@ -20,8 +20,8 @@ fn main() {
             // let string.parse
             let  string = string.as_bytes();
             match file.write_all(string) {
-                Ok(T) => println!("printed to file"),
-                Err(T) => println!("didn't print to file"),
+                Ok(_) => println!("printed to file"),
+                Err(_) => println!("didn't print to file"),
             }
         }
         sum += id.iter().sum::<u64>();
@@ -83,19 +83,19 @@ fn range_to_wrong_id(ranges: [u64;2]) -> Option<Vec<u64>> {
 
         let mut index = 0;
         // println!("now checking {}", i);
-        'digit: for i in digit {
+        'digit: for i in &digit {
             
             //should only happen with first value
             if pattern.is_empty() {
-                pattern.push(i);
+                pattern.push(*i);
                 continue 'digit;
             }
-            seen_digits.push(i);
+            seen_digits.push(*i);
             
 
             // println!("index: {index}, pattern val is: {}, seen digit is: {i}", pattern[index]);
             //zo niet, dan moet ik kijken of index klopt met wat gezien is. 
-            if pattern[index] == i {
+            if pattern[index] == *i {
                 index+=1;
                 if index == pattern.len() {
                     repeated = true;
@@ -126,8 +126,15 @@ fn range_to_wrong_id(ranges: [u64;2]) -> Option<Vec<u64>> {
             seen_digits.clear();
         }
         if repeated {
-            println!("found value: {i}");
-            result.push(i);
+            //check if repeated is correct or not
+            let mut test_vec = Vec::new();
+            for _ in 0..=amount_repeat {
+                test_vec.append(&mut pattern.clone());
+            }
+            if test_vec == digit{
+                println!("found value: {i}");
+                result.push(i);
+            }
         }
     }
     if result.is_empty() {
