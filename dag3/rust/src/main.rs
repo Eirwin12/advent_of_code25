@@ -4,10 +4,10 @@ use std::{fs, str::Chars};
 fn main() {
     let content = fs::read_to_string("../input.txt").expect("expect a file");
     let output = find_high_banks(&content);
-    let mut sum = 0;
+    let mut sum: u64 = 0;
     for num in output {
         match num {
-            Some(t) => sum += t,
+            Some(t) => sum += t as u64,
             None => {
                 println!("something went wrong...");
             }
