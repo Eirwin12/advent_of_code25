@@ -56,7 +56,7 @@ impl Matrix {
         for row in 0..row {
             vector.push(Vec::<Place>::with_capacity(collumn));
             for _ in 0..collumn {
-                vector[row].push(Place::Empty);
+                vector[row].push(Place::Invalid);
             }
         }
         Matrix { mem: vector }
@@ -77,47 +77,32 @@ impl Matrix {
     // | x | x | x | x |
 
     fn get_around_val(&self, row: usize, collumn: usize) -> Matrix{ 
-        let mut smal_matrix = Matrix::new_i(3, 3);
         //make matrix around target val
+        let mut smal_matrix = Matrix::new_i(3, 3);
+        
         let mut small_row = 0;
-        let low_row;
-        if row <= 0 {
-            low_row = 0;
-        }
-        else {
-            low_row = row-1;
-        }
-        let high_row;
-        if row >= self.mem.len() {
-            high_row = 2;
-        }
-        else {
-            high_row= row+1;
-        }
-
-        let low_col;
-        if collumn <= 0 {
-            low_col = 0;
-        }
-        else {
-            low_col = row-1;
-        }
-        let high_col;
-        if collumn >= self.mem[0].len() {
-            high_col = 2;
-        }
-        else {
-            high_col = row+1;
-        }
-        for row in low_row..=high_row {
+        let row = row as i64;
+        let collumn = collumn as i64;
+        // println!("row: {row}, low: {low_row}, high: {high_row}");
+        // println!("col: {collumn}, low: {low_col}, high: {high_col}");
+        for row in row-1..=row+1 {
+            if row < 0 || (row as usize) >= self.mem.len(){
+                small_row += 1;
+                continue;
+            }
             let mut small_collumn = 0;
-            for collumn in low_col..=high_col {
-                match self.get(row, collumn) {
+            for collumn in collumn-1..=collumn+1 {
+                if collumn <0 || (collumn as usize) >= self.mem[0].len() {
+                    small_collumn += 1;
+                    continue;
+                }
+                match self.get(row as usize, collumn as usize) {
                     None => smal_matrix.mem[small_row][small_collumn] = Place::Invalid,
                     Some(t) => smal_matrix.mem[small_row][small_collumn] = t.clone(),
                 }
                 small_collumn += 1;
             }
+        // println!("{:?}", smal_matrix.mem[small_row]);
             small_row += 1;
         }
         //make middle value invalid
@@ -127,14 +112,15 @@ impl Matrix {
 
     fn sum_around_val(&self, row: usize, collumn: usize) ->u8{
         let mut sum = 0_u8;
-        println!("{:?} x {:?}", self.mem[row], self.mem[collumn]);
+        // println!("[{:?}, {:?}, {:?}]", self.mem[row-1][collumn-1], self.mem[row-1][collumn], self.mem[row-1][collumn+1]);
+        // println!("[{:?}, {:?}, {:?}]", self.mem[row][collumn-1], self.mem[row][collumn], self.mem[row][collumn+1]);
+        // println!("\n[{:?}, {:?}, {:?}]\n", self.mem[row+1][collumn-1], self.mem[row+1][collumn], self.mem[row+1][collumn+1]);
         let input = self.get_around_val(row, collumn);
         //sum alles om cel heen
         //is altijd 3x3
-        println!("matrix:\n{:?}\n{:?}\n{:?}", input.mem[0], input.mem[1], input.mem[2]);
+        println!("matrix:\n{:?}\n{:?}\n{:?}\n", input.mem[0], input.mem[1], input.mem[2]);
         for row in 0..3 {
             for collumn in 0..3 {
-                println!("row is: {row}: collumn is: {collumn}");
                 if (row == 1) && (collumn == 1) {
                     continue;
                 }
@@ -147,6 +133,7 @@ impl Matrix {
                 }
             }
         }
+        println!("sum: {sum}");
         sum
     }
     fn check_sum_all_3x3(&self, check: u8) ->u64 {
@@ -155,6 +142,7 @@ impl Matrix {
             //all vectors are the same length
             for collumn in 0..self.mem[0].len() {
                 let sum = self.sum_around_val(row, collumn);
+                // println!("{sum} bigger? {}", sum<check);
                 if sum < check {
                     result+=1;
                 }
@@ -236,8 +224,8 @@ a.a";
 @.@.@@@.@.";
 //row 2 and collumn 1
 //111
+//111
 //101
-//110
         let input = Matrix::new(input);
         let result = input.sum_around_val(2, 1);
         assert_eq!(result, 7, "sums are not equal");
@@ -249,7 +237,24 @@ a.a";
 //-10
 //---
         let result = input.sum_around_val(9, 0);
-        assert_eq!(result, 3, "sums are not equal");
+        assert_eq!(result, 1, "sums are not equal");
+    }
+
+    #[test]
+    fn sum_all() {
+        let input = "..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.";
+        let input = Matrix::new(input);
+        let result = input.check_sum_all_3x3(4);
+        assert_eq!(result, 13, "sums are not equal");
     }
 
     #[test]
