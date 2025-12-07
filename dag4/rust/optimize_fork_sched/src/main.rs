@@ -2,8 +2,8 @@ use std::fs;
 
 fn main() {
     let content = fs::read_to_string("../input.txt").expect("expect a file");
-    let content = Matrix::new(&content);
-    let result = content.check_sum_all_3x3(4);
+    let mut content = Matrix::new(&content);
+    let result = content.remove_all_pos_paper(4);
     println!("needed value is: {}", result);
 }
 
@@ -67,6 +67,18 @@ impl Matrix {
         Some(self.mem.get(row)?.get(collumn)?)
     }
 
+    fn insert(&mut self, row: usize, collumn: usize, value: Place) -> Option<()> {
+        //check if place does exist
+        if self.mem.get(row) == None {
+            return None;
+        }
+        if self.mem[row].get(collumn) == None {
+            return None;
+        }
+        //ik pas vector zelf niet aan, maar ik pas aan waar het naartoe wijst. 
+        self.mem[row][collumn] = value;
+        Some(())
+    }
     //return 3x3 matrix
 
 
@@ -110,15 +122,16 @@ impl Matrix {
         smal_matrix
     }
 
-    fn sum_around_val(&self, row: usize, collumn: usize) ->u8{
+    //IT SHOULD NOT SUM IF CELL ISN'T PAPER
+    fn sum_around_val(&self, row: usize, collumn: usize) ->Option<u8>{
+        if self.mem[row][collumn] != Place::Paper {
+            return None;
+        }
         let mut sum = 0_u8;
-        // println!("[{:?}, {:?}, {:?}]", self.mem[row-1][collumn-1], self.mem[row-1][collumn], self.mem[row-1][collumn+1]);
-        // println!("[{:?}, {:?}, {:?}]", self.mem[row][collumn-1], self.mem[row][collumn], self.mem[row][collumn+1]);
-        // println!("\n[{:?}, {:?}, {:?}]\n", self.mem[row+1][collumn-1], self.mem[row+1][collumn], self.mem[row+1][collumn+1]);
         let input = self.get_around_val(row, collumn);
         //sum alles om cel heen
         //is altijd 3x3
-        println!("matrix:\n{:?}\n{:?}\n{:?}\n", input.mem[0], input.mem[1], input.mem[2]);
+        // println!("matrix:\n{:?}\n{:?}\n{:?}\n", input.mem[0], input.mem[1], input.mem[2]);
         for row in 0..3 {
             for collumn in 0..3 {
                 if (row == 1) && (collumn == 1) {
@@ -133,15 +146,18 @@ impl Matrix {
                 }
             }
         }
-        println!("sum: {sum}");
-        sum
+        // println!("sum: {sum}");
+        Some(sum)
     }
+
     fn check_sum_all_3x3(&self, check: u8) ->u64 {
         let mut result = 0_u64;
         for row in 0..self.mem.len() {
             //all vectors are the same length
             for collumn in 0..self.mem[0].len() {
-                let sum = self.sum_around_val(row, collumn);
+                let Some(sum) = self.sum_around_val(row, collumn)  else {
+                    continue;
+                };
                 // println!("{sum} bigger? {}", sum<check);
                 if sum < check {
                     result+=1;
@@ -149,6 +165,39 @@ impl Matrix {
             }
         }
         result
+    }
+    
+    fn remove_paper(&mut self, check: u8) -> (u64, bool){
+        let mut sum_removed = 0_u64;
+        let mut removed = false;
+        for row in 0..self.mem.len() {
+            //all vectors are the same length
+            for collumn in 0..self.mem[0].len() {
+                let Some(sum) = self.sum_around_val(row, collumn)  else {
+                    continue;
+                };
+                // println!("{sum} bigger? {}", sum<check);
+                if sum < check {
+                    sum_removed +=1;
+                    removed = true;
+                    if None == self.insert(row, collumn, Place::Empty) {
+                        println!("something went wrong...");
+                    }
+                }
+            }
+        }
+        (sum_removed, removed)
+    }
+
+    fn remove_all_pos_paper(&mut self, check: u8) -> u64{
+        let mut sum_removed = 0_u64;
+        let mut removed = true;
+        while removed {
+            let removed_val;
+            (removed_val, removed) = self.remove_paper(check);
+            sum_removed += removed_val;
+        }
+        sum_removed
     }
 }
 
@@ -228,16 +277,16 @@ a.a";
 //101
         let input = Matrix::new(input);
         let result = input.sum_around_val(2, 1);
-        assert_eq!(result, 7, "sums are not equal");
+        assert_eq!(result, Some(7), "sums are not equal");
 //row 8 and collumn 4
         let result = input.sum_around_val(8, 4);
-        assert_eq!(result, 6, "sums are not equal");
+        assert_eq!(result, Some(6), "sums are not equal");
 //row 9 and collumn 0
 //-01
 //-10
 //---
         let result = input.sum_around_val(9, 0);
-        assert_eq!(result, 1, "sums are not equal");
+        assert_eq!(result, Some(1), "sums are not equal");
     }
 
     #[test]
@@ -258,11 +307,38 @@ a.a";
     }
 
     #[test]
-    #[ignore]
     fn read_input() {
         let content = fs::read_to_string("../test_input.txt").expect("expect a file");
         let content = Matrix::new(&content);
         let result: u64 = content.check_sum_all_3x3(4);
         assert_eq!(result, 13, "sums are not equal");
+    }
+
+    #[test]
+    fn rm_paper() {
+
+    }
+    #[test]
+    fn rm_all_paper() {
+        let input = "..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.";
+        let mut input = Matrix::new(input);
+        let result = input.remove_all_pos_paper(4);
+        assert_eq!(result, 43, "sums are not equal");
+    }
+    #[test]
+    fn rm_read_input() {
+        let content = fs::read_to_string("../test_input.txt").expect("expect a file");
+        let mut content = Matrix::new(&content);
+        let result: u64 = content.remove_all_pos_paper(4);
+        assert_eq!(result, 43, "sums are not equal");
     }
 }
