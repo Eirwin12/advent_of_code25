@@ -1,13 +1,27 @@
 use std::fs;
 
 fn main() {
-    println!("Hello, world!");
+    let content = fs::read_to_string("input.txt").expect("expect a file");
+    let (ranges, values) = id_range::split_range_value(&content);
+    let ranges = id_range::vec_range(ranges);
+    let mut fresh = 0;
+    for i in values {
+        match id_range::in_range(&ranges, i) {
+            Some(_) => fresh += 1,
+            _ => (),
+        }
+    }
+    let sum = id_range::all_valid(&ranges);
+    println!("amount of fresh ingredient: {fresh}");
+
+    println!("sum fresh ingredient: {sum}");
 }
 
 mod id_range {
+    use std::slice;
+
     //parameters hoeven (bijna) nooit een reference te zijn
     //de type voor parameter kan wel reference zijn. 
-
     pub struct Range {
         begin: u64,
         end: u64,
@@ -19,6 +33,9 @@ mod id_range {
         }
         pub fn get(&self) -> (&u64, &u64) {
             (&self.begin, &self.end)
+        }
+        pub fn clone(&self) -> Self {
+            Range { begin: self.begin, end: self.end }
         }
     }
 
@@ -54,6 +71,17 @@ mod id_range {
         ranges.push(next_range);
     }
 
+    fn optimize_range(ranges: Vec<Range>) -> Vec<Range> {
+        let mut new_range = Vec::<Range>::with_capacity(ranges.len()-1);
+        new_range.push(ranges[0].clone());
+        
+        for i in 1..ranges.len() {
+            let range = ranges[i].clone();
+            add_in_range(&mut new_range, range);
+        }
+        new_range
+    }
+
     pub fn vec_range(ranges: Vec<&str>) -> Vec<Range> {
         let mut output = Vec::<Range>::new();
         for i in ranges {
@@ -70,17 +98,25 @@ mod id_range {
             let range = Range {begin, end};
             add_in_range(&mut output, range);
         }
-        output
+        optimize_range(output)
     }
 
     pub fn in_range(ranges: &Vec<Range>, value: u64) -> Option<()> {
         for range in ranges {
-            for i in range.begin..=range.end {
-                if i == value {
-                    return Some(());
-                }
+            //range is always sorted (1,2,3..99,100 always in order)
+            let slice = range.begin..=range.end;
+            if slice.contains(&value) {
+                return Some(());
             }
+            // for i in range.begin..=range.end {
+            //     // println!("{i} == {value}");
+            //     if i == value {
+            //         // println!("true!");
+            //         return Some(());
+            //     }
+            // }
         }
+        // println!("no match");
         None
     }
 
@@ -104,6 +140,19 @@ mod id_range {
             strings.push(value);
         }
         (strings, output_vec)
+    }
+
+    pub fn all_valid(ranges: &Vec<Range>) -> u64 {
+        let mut output = 0;
+        for range in ranges {
+            let (begin, end) = range.get();
+            //[12-18] = 18-12 + 1 = 7
+            //12,13,14,15,16,17,18 = 7
+            // output += end - begin + 1;
+            let slice = *begin..=*end;
+            output = slice.count() as u64;
+        }
+        output
     }
 
     #[cfg(test)]
@@ -154,9 +203,9 @@ mod id_range {
             let ranges = vec_range(ranges);
             let check_val = vec![1, 5, 8, 11, 17, 32];
             let exp_output = [None, Some(()), None, Some(()), Some(()), None];
-            for i in check_val {
-                let output = in_range(&ranges, i);
-                assert_eq!(output, exp_output[1], "valid isn't in range or should be in range");
+            for i in 0..check_val.len() {
+                let output = in_range(&ranges, check_val[i]);
+                assert_eq!(output, exp_output[i], "valid isn't in range or should be in range");
             }
         }
 
@@ -182,6 +231,46 @@ mod id_range {
                 assert_eq!(output, exp_output[i], "output isn't equal");
             }
         }
+        #[test]
+        fn optimize_range() {
+            let ranges = vec!["3-5", "10-14", "16-20", "12-18"];
+            let ranges = vec_range(ranges);
+            let exp_output = [Range::new(3, 5), Range::new(10, 20)];
+            for i in 0..exp_output.len() {
+                let range = ranges[i].get();
+                let exp = exp_output[i].get();
+                assert_eq!(range, exp, "ranges are different when combining");
+            }
+        }
+
+        #[test]
+        fn sum_range() {
+            let input = "3-5
+10-14
+16-20
+12-18
+
+1
+5
+8
+11
+17
+32
+";
+            let (ranges, _) = split_range_value(input);
+            let ranges = vec_range(ranges);
+            let exp_output = 14;
+            assert_eq!(all_valid(&ranges), exp_output, "sum of valid not equal");
+
+            let input = vec!["86306595096954-88466949626371"];
+            let ranges = vec_range(input);
+            let sum = all_valid(&ranges);
+            //manualy count al values in range
+            let (begin, end) = ranges[0].get();
+            let exp_sum = *begin..=*end;
+            let exp_sum = exp_sum.count();
+            assert_eq!(sum, exp_sum as u64);
+        }
     }
 }
 
@@ -192,7 +281,7 @@ mod test {
 
     #[test]
     fn read_input () {
-        let content = fs::read_to_string("../test_input.txt").expect("expect a file");
+        let content = fs::read_to_string("test_input.txt").expect("expect a file");
         let (ranges, values) = split_range_value(&content);
         let ranges = vec_range(ranges);
         let exp_output = [None, Some(()), None, Some(()), Some(()), None];
