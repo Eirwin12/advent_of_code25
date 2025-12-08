@@ -18,10 +18,11 @@ fn main() {
 }
 
 mod id_range {
-    use std::slice;
 
     //parameters hoeven (bijna) nooit een reference te zijn
     //de type voor parameter kan wel reference zijn. 
+    #[derive(Debug)]
+    #[derive(PartialEq)]
     pub struct Range {
         begin: u64,
         end: u64,
@@ -45,6 +46,7 @@ mod id_range {
             //if next ranges begin smaller than now,
             //and next ranges end is between ranges begin and end
             //next_range begin --- range begin ---// 
+            println!("loop {i}\ninput range: {:?}\nbuf range:   {:?}\n", next_range, range);
             if next_range.begin < range.begin{
                 //next_range begin --- range begin --- next_range end --- range end 
                 if next_range.end >range.begin && next_range.end < range.end {
@@ -60,9 +62,15 @@ mod id_range {
             }
             //range begin --- next_range begin --- range-end// 
             else if next_range.begin >=range.begin && next_range.begin < range.end {
-                //range begin --- next_range begin --- range-end --- next_range end
+            println!("input range: {:?}\nbuf range:   {:?}\n", next_range, range);
+                //range begin --- next_range begin --- range end --- next_range end
                 if next_range.end > range.end {
                     range.end = next_range.end;
+                    return ();
+                }
+                //range zit erbinnen
+                //range begin --- next_range begin ---nex_range end --- range end
+                else {
                     return ();
                 }
             }
@@ -71,13 +79,14 @@ mod id_range {
         ranges.push(next_range);
     }
 
-    fn optimize_range(ranges: Vec<Range>) -> Vec<Range> {
+    fn optimize_range(ranges: &Vec<Range>) -> Vec<Range> {
         let mut new_range = Vec::<Range>::with_capacity(ranges.len()-1);
         new_range.push(ranges[0].clone());
         
         for i in 1..ranges.len() {
             let range = ranges[i].clone();
             add_in_range(&mut new_range, range);
+            println!("new ranges: {:?}", new_range);
         }
         new_range
     }
@@ -95,10 +104,10 @@ mod id_range {
             if end <= begin {
                 continue;
             }
-            let range = Range {begin, end};
+            let range = Range::new(begin, end);
             add_in_range(&mut output, range);
         }
-        optimize_range(output)
+        optimize_range(&optimize_range(&output))
     }
 
     pub fn in_range(ranges: &Vec<Range>, value: u64) -> Option<()> {
@@ -142,6 +151,25 @@ mod id_range {
         (strings, output_vec)
     }
 
+    fn clone_vec(ranges: &Vec<Range>) ->Vec<Range> {
+        let mut vector = Vec::<Range>::new();
+        for i in ranges {
+            vector.push(i.clone());
+        }
+        vector
+    }
+
+    fn is_optimized(ranges: Vec<Range>) -> Vec<Range> {
+        let mut copy = clone_vec(&ranges);
+        loop {
+            let optimize_range = optimize_range(&copy);
+            if optimize_range == copy {
+                return optimize_range;
+            }
+            copy = optimize_range;
+        }
+    }
+
     pub fn all_valid(ranges: &Vec<Range>) -> u64 {
         let mut output = 0;
         for range in ranges {
@@ -150,7 +178,7 @@ mod id_range {
             //12,13,14,15,16,17,18 = 7
             // output += end - begin + 1;
             let slice = *begin..=*end;
-            output = slice.count() as u64;
+            output += slice.count() as u64;
         }
         output
     }
@@ -249,6 +277,7 @@ mod id_range {
 10-14
 16-20
 12-18
+9-21
 
 1
 5
@@ -257,9 +286,11 @@ mod id_range {
 17
 32
 ";
+//[3, 5], [9, 21]
             let (ranges, _) = split_range_value(input);
             let ranges = vec_range(ranges);
-            let exp_output = 14;
+            let exp_output = 16;
+            println!("{:?}",ranges);
             assert_eq!(all_valid(&ranges), exp_output, "sum of valid not equal");
 
             let input = vec!["86306595096954-88466949626371"];
