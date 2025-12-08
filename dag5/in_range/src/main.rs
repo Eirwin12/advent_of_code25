@@ -40,55 +40,81 @@ mod id_range {
         }
     }
 
-    fn add_in_range(ranges: &mut Vec<Range>, next_range: Range) {
-        for i in 0..ranges.len() {
-            let range = &mut ranges[i];
-            //if next ranges begin smaller than now,
-            //and next ranges end is between ranges begin and end
-            //next_range begin --- range begin ---// 
-            println!("loop {i}\ninput range: {:?}\nbuf range:   {:?}\n", next_range, range);
-            if next_range.begin < range.begin{
-                //next_range begin --- range begin --- next_range end --- range end 
-                if next_range.end >range.begin && next_range.end < range.end {
-                    range.begin = next_range.begin;
-                    return ();
-                }
-                //next_range begin --- range begin --- range end --- next_range end
-                else if next_range.end > range.end {
-                    range.begin = next_range.begin;
-                    range.end = next_range.end;
-                    return ();
-                }
-            }
-            //range begin --- next_range begin --- range-end// 
-            else if next_range.begin >=range.begin && next_range.begin < range.end {
-            println!("input range: {:?}\nbuf range:   {:?}\n", next_range, range);
-                //range begin --- next_range begin --- range end --- next_range end
-                if next_range.end > range.end {
-                    range.end = next_range.end;
-                    return ();
-                }
-                //range zit erbinnen
-                //range begin --- next_range begin ---nex_range end --- range end
-                else {
-                    return ();
-                }
-            }
+    fn merger(range_l: &Range, range_r: &Range) -> Option<Range>{
+        //range_l begin -- range_r begin -- range_r end -- range_l end
+        if range_l.begin <range_r.begin && range_l.end> range_r.end {
+            return Some(Range::new(range_l.begin, range_l.end));
         }
-        //if it isn't in ranges, push val
-        ranges.push(next_range);
+        //range_r begin -- range_l begin -- range_l end -- range_r end
+        if range_r.begin <range_l.begin && range_r.end> range_l.end {
+            return Some(Range::new(range_r.begin, range_r.end));
+        }
+
+        //range_l begin -- range_r begin -- range_l end -- range_r end
+        if range_l.begin <range_r.begin && range_r.begin<range_l.end && range_l.end<=range_r.end {
+            return Some(Range::new(range_l.begin, range_r.end));
+        }
+        //range_r begin -- range_l begin -- range_r end -- range_l end
+        if range_r.begin <range_l.begin && range_l.begin<range_r.end && range_r.end<=range_l.end {
+            return Some(Range::new(range_r.begin, range_l.end));
+        }
+        //same, return 1
+        if range_l == range_r {
+            return Some(Range { begin: range_l.begin, end: range_l.end });
+        }
+        None
     }
 
-    fn optimize_range(ranges: &Vec<Range>) -> Vec<Range> {
-        let mut new_range = Vec::<Range>::with_capacity(ranges.len()-1);
-        new_range.push(ranges[0].clone());
-        
-        for i in 1..ranges.len() {
-            let range = ranges[i].clone();
-            add_in_range(&mut new_range, range);
-            println!("new ranges: {:?}", new_range);
+    fn optimize_range(ranges: &mut Vec<Range>) {
+        let mut merged: bool;
+        loop {
+            merged = false;
+            let mut result = Vec::with_capacity(ranges.len());
+            //fill result with ranges values
+            // println!("ranges is: {:?}", ranges);
+            for i in 0..ranges.len() {
+                result.push(ranges[i].clone());
+            }
+            for i in 0..ranges.len() {
+                for j in i+1..ranges.len() {
+                    let Some(merged_range) = merger(&ranges[i], &ranges[j]) else {
+                        // println!("no merging...");
+                        continue;
+                    };
+                    if i == 0 {
+                        println!("found range: {:?}", merged_range);
+                    }
+                    merged = true;
+                    for index in 0..result.len() {
+                        if result[index] == ranges[i] {
+                            result.remove(index);
+                            break;
+                        }
+                    }
+                    for index in 0..result.len() {
+                        if result[index] == ranges[j] {
+                            result.remove(index);
+                            break;
+                        }
+                    }
+                    result.push(merged_range);
+                    if i == 0 {
+                        println!("newvector: {:?}", result);
+                    }
+                }
+            }
+            if merged == false {
+                break;
+            }
+            println!("result len: {:?}", result.len());
+            println!("ranges len: {:?}", ranges.len());
+            for i in 0..result.len() {
+                ranges[i] = result[i].clone();
+            }
+            for _ in result.len()..ranges.len() {
+                ranges.pop();
+            }
         }
-        new_range
     }
 
     pub fn vec_range(ranges: Vec<&str>) -> Vec<Range> {
@@ -105,9 +131,10 @@ mod id_range {
                 continue;
             }
             let range = Range::new(begin, end);
-            add_in_range(&mut output, range);
+            output.push(range);
         }
-        optimize_range(&optimize_range(&output))
+        optimize_range(&mut output);
+        output
     }
 
     pub fn in_range(ranges: &Vec<Range>, value: u64) -> Option<()> {
@@ -151,25 +178,6 @@ mod id_range {
         (strings, output_vec)
     }
 
-    fn clone_vec(ranges: &Vec<Range>) ->Vec<Range> {
-        let mut vector = Vec::<Range>::new();
-        for i in ranges {
-            vector.push(i.clone());
-        }
-        vector
-    }
-
-    fn is_optimized(ranges: Vec<Range>) -> Vec<Range> {
-        let mut copy = clone_vec(&ranges);
-        loop {
-            let optimize_range = optimize_range(&copy);
-            if optimize_range == copy {
-                return optimize_range;
-            }
-            copy = optimize_range;
-        }
-    }
-
     pub fn all_valid(ranges: &Vec<Range>) -> u64 {
         let mut output = 0;
         for range in ranges {
@@ -206,9 +214,7 @@ mod id_range {
             let ranges = vec_range(ranges);
             let exp_output = [Range::new(1, 8), Range::new(10, 41), Range::new(100, 300)];
             for i in 0..exp_output.len() {
-                let range = ranges[i].get();
-                let exp = exp_output[i].get();
-                assert_eq!(range, exp, "ranges are different when combining");
+                assert_eq!(exp_output.iter().find(|&x| x == &ranges[i]), Some(&ranges[i]), "can't find range");
             }
         }
 
@@ -259,15 +265,14 @@ mod id_range {
                 assert_eq!(output, exp_output[i], "output isn't equal");
             }
         }
+
         #[test]
         fn optimize_range() {
             let ranges = vec!["3-5", "10-14", "16-20", "12-18"];
             let ranges = vec_range(ranges);
             let exp_output = [Range::new(3, 5), Range::new(10, 20)];
             for i in 0..exp_output.len() {
-                let range = ranges[i].get();
-                let exp = exp_output[i].get();
-                assert_eq!(range, exp, "ranges are different when combining");
+                assert_eq!(exp_output.iter().find(|&x| x == &ranges[i]), Some(&ranges[i]), "can't find range");
             }
         }
 
@@ -279,12 +284,7 @@ mod id_range {
 12-18
 9-21
 
-1
-5
-8
-11
-17
-32
+
 ";
 //[3, 5], [9, 21]
             let (ranges, _) = split_range_value(input);
@@ -293,14 +293,25 @@ mod id_range {
             println!("{:?}",ranges);
             assert_eq!(all_valid(&ranges), exp_output, "sum of valid not equal");
 
-            let input = vec!["86306595096954-88466949626371"];
-            let ranges = vec_range(input);
+            let input = "7-10
+13-15
+10-14
+16-20
+12-18
+9-21
+
+
+";
+//[7,21]
+            let (ranges, _) = split_range_value(input);
+            let ranges = vec_range(ranges);
             let sum = all_valid(&ranges);
             //manualy count al values in range
             let (begin, end) = ranges[0].get();
             let exp_sum = *begin..=*end;
             let exp_sum = exp_sum.count();
             assert_eq!(sum, exp_sum as u64);
+
         }
     }
 }
@@ -318,7 +329,7 @@ mod test {
         let exp_output = [None, Some(()), None, Some(()), Some(()), None];
         for i in 0..exp_output.len() {
             let output = in_range(&ranges, values[i]);
-            assert_eq!(output, exp_output[i], "output isn't equal");
+            assert_eq!(output, exp_output[i], "output isn't equal at i= {}", i);
         }
     }
 }
