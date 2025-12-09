@@ -49,7 +49,9 @@ mod read_problem {
             self.values.push(value);
         }
         fn do_problem(&self) -> Option<i128> {
-            let mut output = 0_i128;
+            let mut output: i128;
+            if self.operator == Operator::Mult { output = 1; }
+            else { output = 0; }
             for value in self.values.clone(){
                 match self.operator {
                     Operator::Sum =>  output += value as i128,
@@ -64,37 +66,49 @@ mod read_problem {
     //return index of problem array of problem and which number has problem or if operator has problem
     pub fn read_collumns(string: &str) ->Result<Vec<Problem>, (usize, usize, OperatorErr)>{
         let string: Vec<&str> = string.lines().collect();
-        //input 1 1 1
-        //      1 1 1
-        //      + + +
+        //example input:
+        // 1 1 1
+        // 1 1 1
+        // + + +
         let mut problem = Vec::<Problem>::new();
         for i in 0..string.len() {
             //string has: 1 1 1 or + + +
-            let string: Vec<&str> = string[i].split(' ').collect();
-            for vector_index in 0..string[i].len() {
+            
+            //split werkt zoals verwacht. Het haalt alleen 1 spatie weg
+            //overige spaties worden dan 'empty strings'
+            // println!("string: {:?}", string);
+            
+            let amount_lines = string.len();
+
+            let string: Vec<&str> = string[i].split_whitespace().collect();
+            println!("string: {:?}", string);
+            for vector_index in 0..string.len() {
+                println!("i = {i}, j = {vector_index}");
                 //there could be whitespace in values/operator
-                let string = string[i].trim();
-                if i == 0 && vector_index == 0{
+                // println!("index: {i}, found string: {}", string[i]);
+                // println!("found string: {}", string);
+                if i == 0 {
                     problem.push(Problem::new());
-                    let Ok(value) = string.parse::<i64>() else {
+                    let Ok(value) = string[vector_index].parse::<i64>() else {
                         return Err((0, 0, OperatorErr::NoErr));
                     };
-                    problem[0].add_value(value);
+                    problem[vector_index].add_value(value);
                     continue;
                 }
                 //last value has the operator
-                if i == string.len()-1 {
-                    match string {
+                if i == (amount_lines-1) {
+                    match string[vector_index] {
                         "+" => problem[vector_index].add_operator(Operator::Sum),
                         "*" => problem[vector_index].add_operator(Operator::Mult),
                         _   => return Err((i, vector_index, OperatorErr::NoOperator)),
                     }
                     continue;
                 }
-                let Ok(value) = string.parse::<i64>() else {
+                let Ok(value) = string[vector_index].parse::<i64>() else {
                     return Err((i, vector_index, OperatorErr::NoErr));
                 };
                 problem[vector_index].add_value(value);
+                println!("new vector: {:?}", problem[vector_index].values);
             }
         }
         Ok(problem)
@@ -125,8 +139,8 @@ mod read_problem {
 
         #[test]
         fn reading_collumns() {
-            let input = "1  1  1  1\n
-                               1  1  1  1\n
+            let input = "1  1  1  1
+                               1  1  1  1
                                +  +  +  +";
             let output = read_collumns(input);
             match output {
@@ -191,7 +205,7 @@ mod read_problem {
                 }
                 Err(error) => {
                     let (vector_index, problem_index, error) = error;
-                    panic!("can't creat problem at problem {}, number {} and the operator {:?}", vector_index, problem_index, error);
+                    panic!("can't create problem at problem {}, number {} and the operator {:?}", vector_index, problem_index, error);
                 }
             }
         }
@@ -242,7 +256,7 @@ mod read_problem {
             }
             {
                 let mut new_problem = Problem::new();
-                new_problem.add_operator(Operator::Sum);
+                new_problem.add_operator(Operator::Mult);
                 for _ in 0..3 {
                     new_problem.add_value(98);
                 }
@@ -291,6 +305,7 @@ mod read_problem {
                 panic!("got no valid operator");
             };
             for i in 0..solution.len() {
+                println!("problem {i}");
                 assert_eq!(solution[i], exp_output[i], "solution are not equal");
             }
         }
@@ -311,5 +326,24 @@ mod read_problem {
             };
             assert_eq!(sums, 4277556);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn read_input(){
+        let content = fs::read_to_string("test_input.txt").expect("expect a file");
+        let problems;
+        match read_problem::read_collumns(&content) {
+            Ok(vector) => problems = vector,
+            _ => panic!("can't receive problems"),
+        }
+        let Ok(sums) = read_problem::sum_problems(&problems) else {
+            panic!("can't calculate problem")
+        };
+        assert_eq!(sums, 4277556);
     }
 }
