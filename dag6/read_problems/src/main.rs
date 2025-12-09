@@ -17,6 +17,7 @@ mod read_problem {
 
     #[derive(PartialEq)]
     #[derive(Debug)]
+    #[derive(Clone, Copy)]
     enum Operator {
         Sum,
         Mult,
@@ -114,6 +115,106 @@ mod read_problem {
         Ok(problem)
     }
 
+    fn read_str(string: u8) ->Option<u8> {
+        //there exist no '0'
+        match string {
+            b' ' => Some(0),
+            b'0' => Some(0),
+            b'1' => Some(1),
+            b'2' => Some(2),
+            b'3' => Some(3),
+            b'4' => Some(4),
+            b'5' => Some(5),
+            b'6' => Some(6),
+            b'7' => Some(7),
+            b'8' => Some(8),
+            b'9' => Some(9),
+            _ => None,
+        }
+    }
+
+    fn read_op(string: u8) ->Result<Operator, OperatorErr> {
+        //there exist no '0'
+        match string {
+            b'+' => Ok(Operator::Sum),
+            b'*' => Ok(Operator::Mult),
+            _ => Err(OperatorErr::NoOperator),
+        }
+    }
+
+    fn check_collumn(strings: &Vec<&str>, index: usize, check: u8) -> bool {
+        for digits in strings {
+            if digits.as_bytes()[index] != check {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn to_problem(string: &Vec<&str>, begin_i: usize, end_i: usize) -> Problem {
+        let mut value_vector: Vec<i64> = Vec::new();
+        let mut operator_col: Operator = Operator::NoOperator;
+        for collumn in begin_i..end_i {
+        let mut digit_vector: Vec<u8> = Vec::new();
+        //dont do operator
+            for row in 0..string.len()-1{
+                let vec_index = collumn - begin_i;
+                if row == 0 {
+                    digit_vector.push(read_str(string[row].as_bytes()[collumn]).unwrap());
+                }
+                else {
+                    digit_vector[vec_index] = read_str(string[row].as_bytes()[collumn]).unwrap();
+                }
+            }
+            value_vector.push(combine_vec(digit_vector));
+        }
+        for collumn in begin_i..end_i {
+            let row = string.len()-1;
+            if string[row].as_bytes()[collumn] == b' ' {
+                continue;
+            }
+            match read_op(string[row].as_bytes()[collumn]) {
+                Ok(op) =>operator_col = op,
+                Err(_) => operator_col = Operator::NoOperator,
+            }
+            break;
+        }
+        Problem { operator: operator_col, values: value_vector}
+    }
+
+    fn combine_vec(mut digits: Vec<u8>) ->i64 {
+        digits.reverse();
+        let mut output = 0_i64;
+        for i in 0..digits.len() {
+            output += digits[i] as i64 *(10_i64.pow(i as u32));
+        }
+        output
+    }
+
+    pub fn read_problem_p2(string: &str) ->Option<Vec<Problem>>{
+        let mut output:Vec<Problem> = Vec::new();
+        let string_line = string.lines().collect::<Vec<&str>>();
+        //vec:
+        //  1 next
+        // 1  next
+        //1   next
+        //zoek dus naar de collomn waar alleen spaties is
+        let mut last_str_index_col = 0_usize;
+        //last character is always \n
+        //every string of numbers are equally long
+        for str_index_col in 0..&string_line[0].len()-1 {
+            if check_collumn(&string_line, str_index_col, b' ') == false{
+                continue;
+            }
+            let problem = to_problem(&string_line, last_str_index_col, str_index_col);
+            output.push(problem);
+
+            //next value is valid numbers
+            last_str_index_col = str_index_col +1;
+        }
+        Some(output)
+    }
+
     fn calc_problems(problems: &Vec<Problem>) -> Result<Vec<i128>, OperatorErr> {
         let mut solution = Vec::<i128>::with_capacity(problems.len());
         for problem in problems {
@@ -209,7 +310,6 @@ mod read_problem {
                 }
             }
         }
-
         #[test]
         fn calculate() {
             let mut problem: Vec<Problem> = Vec::new();
@@ -327,6 +427,52 @@ mod read_problem {
             assert_eq!(sums, 4277556);
         }
     }
+
+
+        #[test]
+        fn reading_collumns_p2() {
+            let input = "1   21  18  151
+                                1  1   123 21
+                               +   +   +   *";
+            let output = read_collumns(input);
+            let exp_output = vec![Problem{operator: Operator::Sum, values: vec![10, 1]},
+                                                Problem{operator: Operator::Sum, values: vec![21, 1]},
+                                                Problem{operator: Operator::Sum, values: vec![11,82, 3]},
+                                                Problem{operator: Operator::Mult, values: vec![12, 51, 1]}];
+            match output {
+                Ok(value) => {
+                    for i in 0..value.len() {
+                        println!("problem {i}");
+                        assert_eq!(exp_output[i], value[i], "problem are not equal");
+                    }
+                }
+                Err(error) => {
+                    let (vector_index, problem_index, error) = error;
+                    panic!("can't creat problem at problem {}, number {} and the operator {:?}", vector_index, problem_index, error);
+                }
+            }
+
+            let input = "123 328  51 64 
+ 45 64  387 23 
+  6 98  215 314
+*   +   *   + ";
+            let output = read_collumns(input);
+            match output {
+                Ok(value) => {
+                    let exp_output = vec![Problem{operator: Operator::Sum, values: vec![1, 24, 356]},
+                                                Problem{operator: Operator::Mult, values: vec![369, 248, 8]},
+                                                Problem{operator: Operator::Sum, values: vec![32, 581, 175]},
+                                                Problem{operator: Operator::Mult, values: vec![623, 431, 4]}];
+                    for i in 0..value.len() {
+                        assert_eq!(exp_output[i], value[i], "problem are not equal");
+                    }
+                }
+                Err(error) => {
+                    let (vector_index, problem_index, error) = error;
+                    panic!("can't create problem at problem {}, number {} and the operator {:?}", vector_index, problem_index, error);
+                }
+            }
+        }
 }
 
 #[cfg(test)]
@@ -335,6 +481,20 @@ mod tests {
 
     #[test]
     fn read_input(){
+        let content = fs::read_to_string("test_input.txt").expect("expect a file");
+        let problems;
+        match read_problem::read_collumns(&content) {
+            Ok(vector) => problems = vector,
+            _ => panic!("can't receive problems"),
+        }
+        let Ok(sums) = read_problem::sum_problems(&problems) else {
+            panic!("can't calculate problem")
+        };
+        assert_eq!(sums, 4277556);
+    }
+
+    #[test]
+    fn read_input_p2(){
         let content = fs::read_to_string("test_input.txt").expect("expect a file");
         let problems;
         match read_problem::read_collumns(&content) {
