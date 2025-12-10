@@ -1,12 +1,9 @@
-use std::{fs, fs::File};
-use std::io::Write;
+use std::fs;
 
 fn main() {
     let content = fs::read_to_string("../input.txt").expect("expect a file");
     let input = str_to_range_int(&content);
     let mut sum = 0;
-
-    let mut file = File::create("wrong_id.txt").expect("unable to create file");
 
     for ranges in input {
         let id;
@@ -14,20 +11,11 @@ fn main() {
             Some(vector) => id = vector,
             None => id = Vec::with_capacity(0),
         }
-        for i in &id {
-            let mut string = i.to_string();
-            string.push_str(",");
-            // let string.parse
-            let  string = string.as_bytes();
-            match file.write_all(string) {
-                Ok(_) => println!("printed to file"),
-                Err(_) => println!("didn't print to file"),
-            }
-        }
         sum += id.iter().sum::<u64>();
     }
     println!("de gewilde som is: {sum}");
 }
+
 
 fn str_to_range(input: &str) -> Vec<&str>{
     
@@ -177,7 +165,53 @@ mod tests {
     }
 
     #[test]
+    fn rand_voorwaarden() {
+        let input = "11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124";
+        let output = [[11,22],[95,115],[998,1012],[1188511880,1188511890],[222220,222224], [1698522,1698528],[446443,446449],[38593856,38593862],[565653,565659],[824824821,824824827],[2121212118,2121212124]];
+        let result = str_to_range_int(input);
+        for i in 0..11 {
+            for j in 0..2 {
+                let output_i = output[i][j];
+                let result_i = result[i][j];
+                assert_eq!(output_i, result_i, "output: {output_i}, result{result_i}");                
+            }
+        }
+    }
+
+    #[test]
     fn test_range_10() {
+        let input = [[1188511880,1188511890], 
+                                    [446443,446449], 
+                                    [824824821,824824827]
+                                    ];
+        let all_wrong_id = [1188511885, 446446, 824824824];
+        let mut iter_wrong_id = all_wrong_id.iter();
+        let mut sum = 0;
+        for ranges in input {
+            let id;
+            match range_to_wrong_id(ranges) {
+                Some(vector) => id = vector,
+                None => id = Vec::with_capacity(0),
+            }
+            //in plaats van iter sum (mogelijk sneller) wordt elke waarde apart opgeteld. 
+            //dit, omdat elke waarde toch gecheckt moet worden. 
+            {
+                let val1 = ranges[0];
+                let val2 = ranges[1];
+                println!("the range was {val1} to {val2}");
+            }
+            for i in id {
+                let wrong_id = iter_wrong_id.next().unwrap_or(&0);
+                assert_eq!(*wrong_id, i, "detected id is not wrong");
+                sum = sum + i;
+                println!("the id is: {i}, sum now is: {sum}");
+            }
+        }
+        assert_eq!(None, iter_wrong_id.next(), "not all values has been read");
+    }
+
+    #[test]
+    fn andere_cases() {
         let input = [[1188511880,1188511890], 
                                     [446443,446449], 
                                     [824824821,824824827]
