@@ -46,35 +46,37 @@ mod id_range {
 
     fn optimize_range(ranges: &mut Vec<(u64, u64)>) {
         let mut merged: bool;
-        loop {
+        //fill result with ranges values
+        // println!("ranges is: {:?}", ranges);
+        let mut i = 0;
+        //last value doesn't have to be looped,
+        //because all other vals has been checked
+        while i < ranges.len()-1 {
             merged = false;
-            let mut result = Vec::new();
-            //fill result with ranges values
-            // println!("ranges is: {:?}", ranges);
-            for i in 0..ranges.len() {
-                for j in i+1..ranges.len() {
-                    let Some(merged_range) = merger(&ranges[i], &ranges[j]) else {
-                        result.push(ranges[i].clone());
-                        result.push(ranges[j].clone());
+            for j in i+1..ranges.len()  {
+                let Some(merged_range) = 
+                    merger(&ranges[i], &ranges[j]) 
+                    else {
                         continue;
                     };
-                    if i == 0 {
-                        // println!("found range: {:?}", merged_range);
-                    }
-                    merged = true;
-                    result.push(merged_range);
-                    if i == 0 {
-                        // println!("newvector: {:?}", result);
-                    }
-                }
-            }
-            if merged == false {
+                //if found a value, then change first range
+                //and remove the second rnage
+                ranges[i] = merged_range;
+                //dont really need to preserve value, 
+                //so this speed up is welcome
+                ranges.swap_remove(j);
+                merged = true;
+                //break the loop and do the same index again
+                //to make sure all vals has been checked
                 break;
             }
-            println!("result len: {:?}", result.len());
-            println!("ranges len: {:?}", ranges.len());
-            *ranges = std::mem::take(&mut result);
+            if merged {
+                continue;
+            }
+            //if im here, then all options for place i has been checked
+            i+=1;
         }
+        //if out the loop, all ranges has been checked with othter ranges
     }
 
     pub fn vec_range(ranges: Vec<&str>) -> Vec<(u64, u64)> {
