@@ -26,13 +26,22 @@ mod beams {
             }
             for bytes in 0..lines[i].len() {
                 if let b'^' = lines[i].as_bytes()[bytes] {
-                    if !beams.contains(&bytes) {
-                        continue;
+                    for i in 0..beams.len() {
+                        if beams[i] == bytes {
+                            beams.remove(i);
+                            beams.push(bytes+1);
+                            beams.push(bytes-1);
+                            sum +=1;
+                            break;
+                        }
                     }
-                    beams.remove(beams.iter().position(|x| *x == bytes).expect("needle not found"));
-                    beams.push(bytes+1);
-                    beams.push(bytes-1);
-                    sum += 1;
+                    // if !beams.contains(&bytes) {
+                    //     continue;
+                    // }
+                    // beams.remove(beams.iter().position(|x| *x == bytes).expect("needle not found"));
+                    // beams.push(bytes+1);
+                    // beams.push(bytes-1);
+                    // sum += 1;
                 }
             }
         }
