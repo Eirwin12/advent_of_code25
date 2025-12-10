@@ -1,3 +1,5 @@
+#[derive(Debug)]
+#[derive(Clone, Copy)]
 enum Rotate 
 {
     Left,
@@ -5,6 +7,8 @@ enum Rotate
     None
 }
 
+#[derive(Debug)]
+#[derive(Clone, Copy)]
 struct Movement
 {
     direction: Rotate,
@@ -27,6 +31,13 @@ fn main() {
         }
     }
     println!("answer is {amount_0}");
+
+    let mut vector: Vec<Movement> = Vec::new();
+    for line in contents.lines() {
+        vector.push(str_to_movement(line));
+    }
+    let sum = new_password(vector);
+    println!("new password is: {sum}")
 }
 
 fn execute_instruction(move_p: Movement, place: i16) ->i16
@@ -49,8 +60,41 @@ fn str_to_movement( slice: &str) -> Movement{
     }
     let value = char.as_str().parse::<i16>().or::<i16>(Ok(0)).unwrap();
     
-    
     Movement { direction: richting, steps: value }
+}
+
+fn new_execute_instruction(move_p: Movement, place: i16) -> (i16, u16) {
+    let input: i16 = place;
+    match move_p.direction {
+        Rotate::Left => {
+            let output = input - move_p.steps;
+            // println!("output: {output}");
+            if input != 0 && output<=0 {
+                (output.rem_euclid(100), (output/100).abs() as u16 + 1)
+            }
+            else {
+                (output.rem_euclid(100), (output/100).abs() as u16)
+            }
+        }
+        Rotate::Right => {
+            let output = input + move_p.steps;
+            // println!("output: {output}");
+            (output.rem_euclid(100), (output/100).abs() as u16)
+        }
+        _ => (input, 0),
+    }
+}
+
+fn new_password(movements: Vec<Movement>) -> u16 {
+    let mut sum = 0;
+    let mut index = 50;
+    for moves in movements {
+        let sum_val;
+        (index, sum_val) = new_execute_instruction(moves, index);
+        sum+= sum_val;
+        println!("instruction: {:?}\nindex: {}, sum: {}", moves, index, sum);
+    }
+    sum
 }
 
 #[cfg(test)]
@@ -136,5 +180,55 @@ mod tests {
 
             assert_eq!(instruction.steps, 10, "instruction is not expected output");
         }
+    }
+
+    #[test]
+    fn password_method() {
+        let list_of_instructions = vec![
+            Movement {direction: Rotate::Left, steps: 68},
+            Movement {direction: Rotate::Left, steps: 30},
+            Movement {direction: Rotate::Right, steps: 48},
+            Movement {direction: Rotate::Left, steps: 5},
+            Movement {direction: Rotate::Right, steps: 60},
+            Movement {direction: Rotate::Left, steps: 55},
+            Movement {direction: Rotate::Left, steps: 1},
+            Movement {direction: Rotate::Left, steps: 99},
+            Movement {direction: Rotate::Right, steps: 14},
+            Movement {direction: Rotate::Left, steps: 82},
+        ];
+        let amount_0 = new_password(list_of_instructions);
+        assert_eq!(amount_0, 6, "amounts are not equal");
+    }
+
+    #[test]
+    fn test_new_instruction() {
+        let instruction = Movement {direction: Rotate::Right, steps: 1000};
+        let (index, amount_0) = new_execute_instruction(instruction, 50);
+        assert_eq!(amount_0, 10, "amounts are not equal");
+        assert_eq!(index, 50, "index isn't correct");
+        
+        let instruction = Movement {direction: Rotate::Right, steps: 51};
+        let (index, amount_0) = new_execute_instruction(instruction, 50);
+        assert_eq!(amount_0, 1, "amounts are not equal");
+        assert_eq!(index, 1, "index isn't correct");
+        
+        let instruction = Movement {direction: Rotate::Left, steps: 51};
+        let (index, amount_0) = new_execute_instruction(instruction, 50);
+        println!("{:?}", instruction);
+        println!("101%100 :{}", (50_i16-51).rem_euclid(100));
+        assert_eq!(amount_0, 1, "amounts are not equal");
+        assert_eq!(index, 99, "index isn't correct");
+        
+        let instruction = Movement {direction: Rotate::Left, steps: 50};
+        let (index, amount_0) = new_execute_instruction(instruction, 50);
+        println!("{:?}", instruction);
+        assert_eq!(amount_0, 1, "amounts are not equal");
+        assert_eq!(index, 0, "index isn't correct");
+        
+        let instruction = Movement {direction: Rotate::Right, steps: 50};
+        let (index, amount_0) = new_execute_instruction(instruction, 50);
+        println!("{:?}", instruction);
+        assert_eq!(amount_0, 1, "amounts are not equal");
+        assert_eq!(index, 0, "index isn't correct");
     }
 }
