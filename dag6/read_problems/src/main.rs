@@ -2,15 +2,23 @@ use std::fs;
 
 fn main() {
     let content = fs::read_to_string("input.txt").expect("expect a file");
-    let problems;
-    match read_problem::read_collumns(&content) {
-        Ok(vector) => problems = vector,
-        Err(error) => panic!("panic with values: {:?}", error),
-    }
-    let Ok(sum) = read_problem::sum_problems(&problems) else {
-        panic!("can't sum");
+    // let problems;
+    // match read_problem::read_collumns(&content) {
+    //     Ok(vector) => problems = vector,
+    //     Err(error) => panic!("panic with values: {:?}", error),
+    // }
+    // let Ok(sum) = read_problem::sum_problems(&problems) else {
+    //     panic!("can't sum");
+    // };
+    // println!("sum is: {}", sum);
+
+    let Some(problems) = read_problem::read_problem_p2(&content) else {
+        panic!("panic with making problems");
     };
-    println!("sum is: {}", sum);
+    let Ok(sum) = read_problem::sum_problems(&problems) else {
+        panic!("panic with making problems");
+    };
+    println!("sum part 2 is: {}", sum);
 }
 
 mod read_problem {
@@ -84,7 +92,7 @@ mod read_problem {
             let string: Vec<&str> = string[i].split_whitespace().collect();
             println!("string: {:?}", string);
             for vector_index in 0..string.len() {
-                println!("i = {i}, j = {vector_index}");
+                // println!("i = {i}, j = {vector_index}");
                 //there could be whitespace in values/operator
                 // println!("index: {i}, found string: {}", string[i]);
                 // println!("found string: {}", string);
@@ -150,23 +158,22 @@ mod read_problem {
         }
         true
     }
+    
+    use std::collections::VecDeque;
 
     fn to_problem(string: &Vec<&str>, begin_i: usize, end_i: usize) -> Problem {
         let mut value_vector: Vec<i64> = Vec::new();
         let mut operator_col: Operator = Operator::NoOperator;
         for collumn in begin_i..end_i {
-        let mut digit_vector: Vec<u8> = Vec::new();
+        let mut digit_vector: VecDeque::<u8> = VecDeque::new();
         //dont do operator
-            for row in 0..string.len()-1{
-                let vec_index = collumn - begin_i;
-                if row == 0 {
-                    digit_vector.push(read_str(string[row].as_bytes()[collumn]).unwrap());
-                }
-                else {
-                    digit_vector[vec_index] = read_str(string[row].as_bytes()[collumn]).unwrap();
-                }
-            }
-            value_vector.push(combine_vec(digit_vector));
+        println!("collumn: {collumn}");
+        for row in 0..string.len()-1{
+            println!("found: {}", String::from_utf8(vec![string[row].as_bytes()[collumn]]).unwrap());
+            digit_vector.push_front(read_str(string[row].as_bytes()[collumn]).unwrap());
+        }
+        println!("digits: {:?}", digit_vector);
+        value_vector.push(combine_vec(digit_vector));
         }
         for collumn in begin_i..end_i {
             let row = string.len()-1;
@@ -182,9 +189,27 @@ mod read_problem {
         Problem { operator: operator_col, values: value_vector}
     }
 
-    fn combine_vec(mut digits: Vec<u8>) ->i64 {
-        digits.reverse();
+    // fn reverse_deque(mut deque: &mut VecDeque<u8>) -> VecDeque<u8>{
+    //     let mut vector: Vec<&u8> = deque.iter().collect();
+    //     vector.reverse();
+    //     let mut deque: VecDeque<u8> = VecDeque::new();
+    //     for i in vector {
+    //         deque.push_back(*i);
+    //     }
+    //     deque
+    // }
+
+    fn combine_vec(mut digits: VecDeque<u8>) ->i64 {
+        // digits.reverse();
         let mut output = 0_i64;
+        while digits.contains(&0) {
+            if digits[0] == 0 {
+                digits.pop_front();
+            }
+            if digits.iter().last() == Some(&0) {
+                digits.pop_back();
+            }
+        }
         for i in 0..digits.len() {
             output += digits[i] as i64 *(10_i64.pow(i as u32));
         }
@@ -207,6 +232,7 @@ mod read_problem {
                 continue;
             }
             let problem = to_problem(&string_line, last_str_index_col, str_index_col);
+            println!("problem: {:?}", problem);
             output.push(problem);
 
             //next value is valid numbers
@@ -428,48 +454,41 @@ mod read_problem {
         }
     }
 
-
         #[test]
         fn reading_collumns_p2() {
-            let input = "1   21  18  151
-                                1  1   123 21
-                               +   +   +   *";
-            let output = read_collumns(input);
-            let exp_output = vec![Problem{operator: Operator::Sum, values: vec![10, 1]},
+            let input = std::fs::read_to_string("part2_test.txt").expect("expect a file");
+            let output = read_problem_p2(&input);
+            let exp_output = vec![Problem{operator: Operator::Sum, values: vec![1, 1]},
                                                 Problem{operator: Operator::Sum, values: vec![21, 1]},
                                                 Problem{operator: Operator::Sum, values: vec![11,82, 3]},
                                                 Problem{operator: Operator::Mult, values: vec![12, 51, 1]}];
             match output {
-                Ok(value) => {
+                Some(value) => {
                     for i in 0..value.len() {
                         println!("problem {i}");
+                        println!("output: {:?}", value[i]);
                         assert_eq!(exp_output[i], value[i], "problem are not equal");
                     }
                 }
-                Err(error) => {
-                    let (vector_index, problem_index, error) = error;
-                    panic!("can't creat problem at problem {}, number {} and the operator {:?}", vector_index, problem_index, error);
+                None => {
+                    panic!("No problems could be made!");
                 }
             }
 
-            let input = "123 328  51 64 
- 45 64  387 23 
-  6 98  215 314
-*   +   *   + ";
-            let output = read_collumns(input);
+            let input = std::fs::read_to_string("test_input.txt").expect("expect a file");
+            let output = read_problem_p2(&input);
             match output {
-                Ok(value) => {
-                    let exp_output = vec![Problem{operator: Operator::Sum, values: vec![1, 24, 356]},
-                                                Problem{operator: Operator::Mult, values: vec![369, 248, 8]},
-                                                Problem{operator: Operator::Sum, values: vec![32, 581, 175]},
-                                                Problem{operator: Operator::Mult, values: vec![623, 431, 4]}];
+                Some(value) => {
+                    let exp_output = vec![Problem{operator: Operator::Mult, values: vec![1, 24, 356]},
+                                                Problem{operator: Operator::Sum, values: vec![369, 248, 8]},
+                                                Problem{operator: Operator::Mult, values: vec![32, 581, 175]},
+                                                Problem{operator: Operator::Sum, values: vec![623, 431, 4]}];
                     for i in 0..value.len() {
                         assert_eq!(exp_output[i], value[i], "problem are not equal");
                     }
                 }
-                Err(error) => {
-                    let (vector_index, problem_index, error) = error;
-                    panic!("can't create problem at problem {}, number {} and the operator {:?}", vector_index, problem_index, error);
+                None => {
+                    panic!("No problems could be made!");
                 }
             }
         }
