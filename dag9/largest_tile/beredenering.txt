@@ -1,0 +1,13 @@
+
+2-9 + 5-7
+7^2 + 2^2 = 42 + 4 = 46
+
+7-11 + 1-7
+-4^2 + -6^2 = 16 + 36 = 52
+7-2 + 3-3
+5^2 + 0 = 25
+
+2-11 + 5-1
+-9^2 + 4^2 = 81 + 16 = 97
+
+dus als de grootste opp. gevonden is, is de langste diagonaal ook gevonden
