@@ -1,4 +1,4 @@
-use std::{fs, collections::HashSet};
+use std::fs;
 fn main() {
     let content = fs::read_to_string("input.txt").expect("path exist");
     let Some(sum) = quantum_splits(&content) else {
@@ -18,36 +18,29 @@ fn index_vector(bord: &str) -> Option<usize> {
 }
 
 fn quantum_splits(bord: &str) -> Option<u64> {
-    fn path(line: Vec<&str>, index: usize, mut sum: u64) -> Option<u64> {
-        let Some(mut sum) = Some(sum) else {
-            return None;
-        };
+    fn path(line: &[&str], index: usize) -> Option<u64> {
         //only have to look at 1 path
         if line.is_empty() {
+            return Some(1);
+        }
+        if line.len() == 1 {
             return None;
         }
-        if line.len() == 0 {
-            return Some(sum);
-        }
+        let mut sum = 0;
         //index.0 = beam index
         for bytes_index in 0..line[0].len() {
            if let b'^' = line[0].as_bytes()[bytes_index] {
                 if bytes_index != index {
                     continue;
                 }
-                sum += 1;
-                let mut sub_path: Vec<&str> = Vec::new();
-                for i in 2..line.len() {
-                    sub_path.push(line[i]);
-                }
-                let Some(temp_val) = path(sub_path, bytes_index-1, sum) else {
-                    return None;
-                }
-                sum += temp_val;
-                let Some(temp_val) = path(sub_path, bytes_index+1, sum) else {
-                    return None;
-                };
-                sum += temp_val;
+                println!("slice: {:?}, index {index}", line[0]);
+                sum = path(&line[2..], bytes_index-1)?;
+                // println!("leftsum is: {sum}");
+                println!("slice: {:?}, index {index}", line[0]);
+                let temp = path(&line[2..], bytes_index+1)?;
+                // println!("rightsum is: {temp}");
+                sum += temp;
+                println!("total sum is: {sum}");
             }
         }
         Some(sum)
@@ -57,7 +50,7 @@ fn quantum_splits(bord: &str) -> Option<u64> {
     //find the S
     let index =index_vector(bord)?;
     //only even numbers should count 
-    let sum = path(lines, index, 0)?;
+    let sum = path(&lines[2..], index)?;
     Some(sum)
 }
 
