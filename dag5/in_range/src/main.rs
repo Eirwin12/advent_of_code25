@@ -76,6 +76,14 @@ mod id_range {
             //if im here, then all options for place i has been checked
             i+=1;
         }
+        i = 0;
+        while i<ranges.len() {
+            if ranges[i].0 == ranges[i].1 {
+                ranges.swap_remove(i);
+                continue;
+            }
+            i+=1;
+        }
         //if out the loop, all ranges has been checked with othter ranges
     }
 
@@ -95,6 +103,7 @@ mod id_range {
             let range = (begin, end);
             output.push(range);
         }
+        optimize_range(&mut output);
         optimize_range(&mut output);
         output
     }
@@ -146,14 +155,16 @@ mod id_range {
             //[12-18] = 18-12 + 1 = 7
             //12,13,14,15,16,17,18 = 7
             // output += end - begin + 1;
-            let slice = range.0..=range.1;
-            output += slice.count() as u64;
+            println!("range: {:?}\n", range);
+            output += (range.0..=range.1).count() as u64;
         }
         output
     }
 
     #[cfg(test)]
     mod tests {
+
+        use std::fs;
 
         use super::*;
 
@@ -273,6 +284,25 @@ mod id_range {
             let exp_sum = exp_sum.count();
             assert_eq!(sum, exp_sum as u64);
 
+        }
+
+        #[test]
+        fn right_answers() {
+            let input = fs::read_to_string("input.txt").unwrap();
+            let (ranges, _) = split_range_value(&input);
+            let mut ranges = vec_range(ranges);
+            let input =  fs::read_to_string("answers.txt").unwrap();
+            let (exp_output, _) = split_range_value(&input);
+            let mut index = 0;
+            ranges.sort();
+            for i in exp_output {
+                let value: Vec<&str> = i.split('-').collect();
+                let value: (u64, u64)= (value[0].parse().unwrap(), value[1].parse().unwrap());
+                println!("exp:  {:?}", value);
+                println!("have: {:?}", ranges[index]);
+                assert_eq!(value, ranges[index]);
+                index += 1;
+            }
         }
     }
 }

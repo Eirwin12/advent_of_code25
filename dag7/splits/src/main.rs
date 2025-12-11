@@ -1,52 +1,44 @@
-use std::fs;
+use std::{fs, collections::HashSet};
 fn main() {
     let content = fs::read_to_string("input.txt").expect("path exist");
-    let sum = beams::count_splits(&content);
+    let Some(sum) = count_splits(&content) else {
+        panic!("no sum");
+    };
     println!("found sum: {sum}");
 }
 
-mod beams {
-
-    pub fn count_splits(bord: &str) -> u64 {
-        let lines: Vec<&str> = bord.lines().collect();
-        //find the S
-        let mut beams: Vec<usize> = Vec::new();
-        for i in 0..lines[0].as_bytes().len() {
-            if lines[0].as_bytes()[i] == b'S' {
-                beams.push(i);
-                break;
-            }
+fn index_vector(bord: &str) -> Option<usize> {
+    let lines: Vec<&str> = bord.lines().collect();
+    for i in 0..lines[0].as_bytes().len() {
+        if lines[0].as_bytes()[i] == b'S' {
+            return Some(i);
         }
-
-        let mut sum = 0;
-        //only even numbers should count
-        for i in 2..lines.len() {
-            if i%2 != 0 {
-                continue;
-            }
-            for bytes in 0..lines[i].len() {
-                if let b'^' = lines[i].as_bytes()[bytes] {
-                    for i in 0..beams.len() {
-                        if beams[i] == bytes {
-                            beams.remove(i);
-                            beams.push(bytes+1);
-                            beams.push(bytes-1);
-                            sum +=1;
-                            break;
-                        }
-                    }
-                    // if !beams.contains(&bytes) {
-                    //     continue;
-                    // }
-                    // beams.remove(beams.iter().position(|x| *x == bytes).expect("needle not found"));
-                    // beams.push(bytes+1);
-                    // beams.push(bytes-1);
-                    // sum += 1;
-                }
-            }
-        }
-        sum
     }
+    None
+}
+
+fn count_splits(bord: &str) -> Option<u64> {
+    let lines: Vec<&str> = bord.lines().collect();
+    //find the S
+    let mut beams: HashSet<usize> = HashSet::new();
+    beams.insert(index_vector(bord)?);
+    let mut sum = 0;
+    //only even numbers should count
+    for line_index in (2..lines.len()).step_by(2) {
+        //need the index
+        for bytes_index in 0..lines[line_index].len() {
+            if let b'^' = lines[line_index].as_bytes()[bytes_index] {
+                //cant remove, then ignore it
+                if !beams.remove(&bytes_index) {
+                    continue;
+                }
+                beams.insert(&bytes_index-1);
+                beams.insert(&bytes_index+1);
+                sum += 1;
+            }
+        }
+    }
+    Some(sum)
 }
 
 #[cfg(test)]
@@ -55,6 +47,35 @@ mod tests {
     #[test]
     fn read_input() {
         let content = fs::read_to_string("test_input.txt").expect("path exist");
-        assert_eq!(beams::count_splits(&content), 21);
+        assert_eq!(count_splits(&content), Some(21));
+    }
+
+    #[test]
+    fn multiple_splitters() {
+        let string =
+".....S.......   
+.............
+....^.^......
+.............
+...^.^.^.....";
+        let index = index_vector(string);
+        assert_eq!(index, Some(5));
+        let splits = count_splits(string);
+        assert_eq!(splits, Some(1));
+
+        let string =
+".....S.......   
+.............
+.....^.......
+.............
+....^.^......
+.............
+...^.^.^.....";
+        let splits = count_splits(string);
+        assert_eq!(splits, Some(6));
+
+        let string = fs::read_to_string("second_test.txt").unwrap();
+        let splits = count_splits(&string);
+        assert_eq!(splits, Some(25));
     }
 }
