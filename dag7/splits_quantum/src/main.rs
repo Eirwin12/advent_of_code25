@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, collections::HashMap};
 fn main() {
     let content = fs::read_to_string("input.txt").expect("path exist");
     let Some(sum) = quantum_splits(&content) else {
@@ -18,39 +18,66 @@ fn index_vector(bord: &str) -> Option<usize> {
 }
 
 fn quantum_splits(bord: &str) -> Option<u64> {
-    fn path(line: &[&str], index: usize) -> Option<u64> {
-        //only have to look at 1 path
-        if line.is_empty() {
-            return Some(1);
-        }
-        if line.len() == 1 {
+    fn splits_key(beams: &mut HashMap<usize, u64>, index: &usize) ->Option<()> {
+
+        //cant remove, then ignore it
+        let Some(amount_beams) = beams.remove(index) else {
             return None;
-        }
-        let mut sum = 0;
-        //index.0 = beam index
-        for bytes_index in 0..line[0].len() {
-           if let b'^' = line[0].as_bytes()[bytes_index] {
-                if bytes_index != index {
-                    continue;
-                }
-                println!("slice: {:?}, index {index}", line[0]);
-                sum = path(&line[2..], bytes_index-1)?;
-                // println!("leftsum is: {sum}");
-                println!("slice: {:?}, index {index}", line[0]);
-                let temp = path(&line[2..], bytes_index+1)?;
-                // println!("rightsum is: {temp}");
-                sum += temp;
-                println!("total sum is: {sum}");
+        };
+
+        println!("found index {} with amount {}", index, amount_beams);
+
+        let beam_left;
+        match beams.remove(&(index-1)) {
+            Some(amount) => {
+                beam_left = amount + amount_beams;
+                println!("beam had {} values", amount);
             }
+            None => beam_left = amount_beams,
         }
-        Some(sum)
+
+        println!("found index {} with amount {}", index-1, beam_left);
+
+        beams.insert(index-1, beam_left)?;
+        let beam_right;
+        match beams.remove(&(index+1)) {
+            Some(amount) => {
+                beam_right = amount + amount_beams;
+            }
+            None => beam_right = amount_beams,
+        }
+
+        println!("found index {}with amount {}", index+1, beam_left);
+
+        beams.insert(index+1, beam_right)?;
+        Some(())
     }
+
+
+    let mut beams:HashMap<usize, u64> = HashMap::new();
 
     let lines: Vec<&str> = bord.lines().collect();
     //find the S
     let index =index_vector(bord)?;
+    beams.insert(index, 1);
+
+    for lines in lines[2..].iter().enumerate().step_by(2) {
+        println!("line {}", lines.0);
+        for bytes_index in 0..lines.1.len() {
+            if let b'^' = lines.1.as_bytes()[bytes_index] {
+                match splits_key(&mut beams, &bytes_index) {
+                    None => continue,
+                    Some(_) => (),
+                }
+            }
+        }
+    }
+
     //only even numbers should count 
-    let sum = path(&lines[2..], index)?;
+    let mut sum = 0;
+    for (_, v) in beams {
+        sum += v;
+    }
     Some(sum)
 }
 
