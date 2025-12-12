@@ -57,7 +57,6 @@ fn all_paths(devices: Vec<Devices>, begin: Option<&str>, end: Option<&str>) ->u6
 
     begin.unwrap_or_else("you");
     end.unwrap_or_else("out");
-    
     let mut sum = 0;
     for device in devices {
         if device.input == begin {
