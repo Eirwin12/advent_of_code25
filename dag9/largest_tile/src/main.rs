@@ -9,6 +9,7 @@ fn main() {
 fn make_grid(input: &str) -> (Vec<String>, Vec<(u16, u16)>) {
     //find smallest and biggest value
     let input: Vec<&str> = input.lines().collect();
+    //(collumn, row)
     let mut bord: (u16, u16) = (0, 0);
     //collumn, row
     let mut points: Vec<(u16, u16)> = Vec::new();
@@ -23,22 +24,21 @@ fn make_grid(input: &str) -> (Vec<String>, Vec<(u16, u16)>) {
             bord.1 = range.1;
         }
     }
-    let mut output: Vec<String> = Vec::new();
-        output.push(".".repeat((bord.0+1).into()));
+    let mut grid: Vec<String> = Vec::new();
+    //make all the rows
     for i in 0..=bord.1 {
         let mut string = ".".repeat((bord.0+1).into());
         let mut on_bord = points.iter();
         loop {
-            let Some(point) = on_bord.find(|&x| x.0 == i) else {
+            //search if there is point in row
+            let Some(point) = on_bord.find(|&x| x.1 == i) else {
                 break;
             };
             string.replace_range(&point.0.into()..=&point.0.into(), "#");
         }
-        output.push(string);
+        grid.push(string);
     }
-    
-    output.push(".".repeat((bord.0+1).into()));
-    (output, points)
+    (grid, points)
 }
 
 //calcs the distance between points
@@ -46,13 +46,14 @@ fn make_grid(input: &str) -> (Vec<String>, Vec<(u16, u16)>) {
 fn calc_square<const DIMENSION: usize>(point: ([u16;DIMENSION], [u16;DIMENSION])) -> u32 {
     let mut distance: u32 = 0;
     for i in 0..DIMENSION {
-        let difference = point.0[i] - point.1[i];
-        distance += (difference as u32).pow(2);
+        let difference = point.0[i] as i32 - point.1[i] as i32;
+        distance += (difference as i32).pow(2) as u32;
     }
     distance
 }
 
 fn make_biggest_square(all_points: Vec<(u16, u16)>) ->([(u16, u16); 2], u32) {
+    //(collumn, row)
     let mut output: ([(u16, u16); 2], u32) = ([(0, 0);2], 0);
     for in_point in all_points.iter().enumerate() {
         //if both points are smaller than biggest val, dont check it
@@ -99,7 +100,7 @@ mod tests {
     fn test_biggest_square() {
         let content = fs::read_to_string("test_input.txt").expect("path exist");
         let (_, points) = make_grid(&content);
-        let exp_output: [(u16, u16); 2] = [(9, 14), (123, 4)];
+        let exp_output: [(u16, u16); 2] = [(2, 5), (11, 1)];
         let (output, _) = make_biggest_square(points);
         for point in output.iter().enumerate() {
             assert_eq!(exp_output[point.0], *point.1, "the points aren't the same");

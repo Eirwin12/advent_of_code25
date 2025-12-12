@@ -1,10 +1,15 @@
 use std::fs;
+use std::time::Instant;
 fn main() {
     let content = fs::read_to_string("input.txt").expect("path exist");
+    let now = Instant::now();
     let Some(sum) = quantum_splits(&content) else {
+        // now.elapsed();
         panic!("no sum");
     };
+    let elapsed = now.elapsed();
     println!("found sum: {sum}");
+    println!("took {:?}", elapsed);
 }
 
 fn index_vector(bord: &str) -> Option<usize> {
@@ -23,27 +28,38 @@ fn quantum_splits(bord: &str) -> Option<u64> {
         if line.is_empty() {
             return Some(1);
         }
+        //length can only be positive
+        //length 0 is already covered
+        //last line is only dots
         if line.len() == 1 {
             return None;
         }
-        let mut sum = 0;
-        //index.0 = beam index
-        for bytes_index in 0..line[0].len() {
-           if let b'^' = line[0].as_bytes()[bytes_index] {
-                if bytes_index != index {
-                    continue;
-                }
-                println!("slice: {:?}, index {index}", line[0]);
-                sum = path(&line[2..], bytes_index-1)?;
-                // println!("leftsum is: {sum}");
-                println!("slice: {:?}, index {index}", line[0]);
-                let temp = path(&line[2..], bytes_index+1)?;
-                // println!("rightsum is: {temp}");
-                sum += temp;
-                println!("total sum is: {sum}");
-            }
+
+        //last line is only dots
+        if line.len() == 1 {
+            return None;
         }
-        Some(sum)
+        let mut sum;
+        //index.0 = beam index
+        if line[0].as_bytes()[index] != b'^' {
+            path(&line[2..], index)
+        }
+        //did find '^'
+        else if line.len() == 2{
+            Some(2)
+        }
+        else {
+            // println!("slice: {:?}, index {index}", line[0]);
+            sum = path(&line[2..], index-1)?;
+            // println!("leftsum is: {sum}");
+            // println!("slice: {:?}, index {index}", line[0]);
+            let temp = path(&line[2..], index+1)?;
+            // println!("rightsum is: {temp}");
+            sum += temp;
+            // println!("total sum is: {sum}");
+            Some(sum)
+
+        }
     }
 
     let lines: Vec<&str> = bord.lines().collect();
@@ -66,14 +82,32 @@ mod tests {
     #[test]
     fn multiple_splitters() {
         let string =
-".....S.......   
-.............
-....^.^......
-.............
-...^.^.^.....";
+"..S.......
+..........
+.^.^......
+..........
+^.^.^.....
+..........";
         let index = index_vector(string);
-        assert_eq!(index, Some(5));
+        assert_eq!(index, Some(2));
         let splits = quantum_splits(string);
-        assert_eq!(splits, Some(40));
+        assert_eq!(splits, Some(2));
+    }
+
+    #[test]
+    fn special_case() {
+        let string =
+"..S.......
+..........
+..^.......
+..........
+.^.^......
+..........
+^.^.^.....
+..........";
+        let index = index_vector(string);
+        assert_eq!(index, Some(2));
+        let splits = quantum_splits(string);
+        assert_eq!(splits, Some(8));
     }
 }
