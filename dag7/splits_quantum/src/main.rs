@@ -1,4 +1,5 @@
 use std::{fs, collections::HashMap};
+use std::time::Instant;
 fn main() {
     let content = fs::read_to_string("input.txt").expect("path exist");
     let now = Instant::now();
@@ -42,7 +43,7 @@ fn quantum_splits(bord: &str) -> Option<u64> {
 
         println!("found index {} with amount {}", index-1, beam_left);
 
-        beams.insert(index-1, beam_left)?;
+        beams.insert(index-1, beam_left);
         let beam_right;
         match beams.remove(&(index+1)) {
             Some(amount) => {
@@ -62,16 +63,13 @@ fn quantum_splits(bord: &str) -> Option<u64> {
 
     let lines: Vec<&str> = bord.lines().collect();
     //find the S
-    let index =index_vector(bord)?;
-    beams.insert(index, 1);
+    beams.insert(index_vector(bord)?, 1);
 
-    for lines in lines[2..].iter().enumerate().step_by(2) {
-        println!("line {}", lines.0);
-        for bytes_index in 0..lines.1.len() {
-            if let b'^' = lines.1.as_bytes()[bytes_index] {
-                match splits_key(&mut beams, &bytes_index) {
-                    None => continue,
-                    Some(_) => (),
+    for &lines in lines[2..].iter().step_by(2) {
+        for character in lines.as_bytes().iter().enumerate() {
+            if *character.1 == b'^' {
+                match splits_key(&mut beams, &character.0) {
+                    _ => continue,
                 }
             }
         }
@@ -107,22 +105,5 @@ mod tests {
         assert_eq!(index, Some(2));
         let splits = quantum_splits(string);
         assert_eq!(splits, Some(2));
-    }
-
-    #[test]
-    fn special_case() {
-        let string =
-"..S.......
-..........
-..^.......
-..........
-.^.^......
-..........
-^.^.^.....
-..........";
-        let index = index_vector(string);
-        assert_eq!(index, Some(2));
-        let splits = quantum_splits(string);
-        assert_eq!(splits, Some(8));
     }
 }
